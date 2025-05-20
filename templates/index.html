@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatCast - Turn PDFs into Podcasts</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .loading {
+            display: inline-block;
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .progress-bar {
+            height: 6px;
+            background-color: #4f46e5;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <header class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-indigo-700 mb-2">ChatCast</h1>
+            <p class="text-xl text-gray-600">Transform academic PDFs into engaging podcast conversations</p>
+        </header>
+        
+        <div class="max-w-lg mx-auto bg-white rounded-lg shadow-md p-6">
+            <div id="upload-section">
+                <h2 class="text-xl font-semibold mb-4">Upload Your PDF</h2>
+                <form id="upload-form" class="mb-4">
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="file-upload">
+                            Select PDF File
+                        </label>
+                        <input class="hidden" id="file-upload" type="file" accept=".pdf" required>
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-indigo-500" id="drop-area">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                            </svg>
+                            <p class="mt-1 text-sm text-gray-500">Drag and drop your PDF here, or click to browse</p>
+                            <p class="mt-1 text-xs text-gray-400">Maximum file size: 16MB</p>
+                        </div>
+                    </div>
+                    <div id="file-info" class="hidden mb-4 p-3 bg-gray-50 rounded-lg">
+                        <div class="flex items-center">
+                            <svg class="h-6 w-6 text-indigo-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                            </svg>
+                            <span id="file-name" class="text-sm font-medium text-gray-700"></span>
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-150">
+                        Generate Podcast
+                    </button>
+                </form>
+            </div>
+            
+            <div id="processing-section" class="hidden text-center py-8">
+                <div class="loading mb-4"></div>
+                <h2 class="text-xl font-semibold mb-2">Processing Your PDF</h2>
+                <p class="text-gray-600 mb-4">This may take a few minutes. We're extracting text, summarizing content, creating a script, and generating audio.</p>
+                <div class="w-full bg-gray-200 rounded-full h-1.5 mb-4">
+                    <div class="progress-bar rounded-full w-0"></div>
+                </div>
+                <p id="status-message" class="text-sm text-gray-500">Starting process...</p>
+            </div>
+            
+            <div id="error-section" class="hidden text-center py-8">
+                <svg class="mx-auto h-12 w-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <h2 class="text-xl font-semibold mt-4 mb-2">Error</h2>
+                <p id="error-message" class="text-gray-600 mb-4"></p>
+                <button id="try-again" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-150">
+                    Try Again
+                </button>
+            </div>
+            
+            <div id="complete-section" class="hidden py-8">
+                <div class="text-center mb-6">
+                    <svg class="mx-auto h-12 w-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <h2 class="text-xl font-semibold mt-4 mb-2">Your Podcast is Ready!</h2>
+                </div>
+                
+                <div class="bg-gray-50 rounded-lg p-4 mb-4">
+                    <h3 class="font-medium text-gray-700 mb-2">Listen to your podcast</h3>
+                    <audio id="audio-player" controls class="w-full">
+                        Your browser does not support the audio element.
+                    </audio>
+                </div>
+                
+                <a id="download-link" href="#" class="block w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded text-center focus:outline-none focus:shadow-outline transition duration-150 mb-4">
+                    Download Audio
+                </a>
+                
+                <button id="start-over" class="block w-full bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded text-center focus:outline-none focus:shadow-outline transition duration-150">
+                    Process Another PDF
+                </button>
+            </div>
+        </div>
+        
+        <footer class="mt-12 text-center text-gray-500 text-sm">
+            <p>ChatCast © 2025 • Powered by AI</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadForm = document.getElementById('upload-form');
+            const fileUpload = document.getElementById('file-upload');
+            const dropArea = document.getElementById('drop-area');
+            const fileInfo = document.getElementById('file-info');
+            const fileName = document.getElementById('file-name');
+            const uploadSection = document.getElementById('upload-section');
+            const processingSection = document.getElementById('processing-section');
+            const errorSection = document.getElementById('error-section');
+            const completeSection = document.getElementById('complete-section');
+            const errorMessage = document.getElementById('error-message');
+            const statusMessage = document.getElementById('status-message');
+            const progressBar = document.querySelector('.progress-bar');
+            const audioPlayer = document.getElementById('audio-player');
+            const downloadLink = document.getElementById('download-link');
+            const tryAgainBtn = document.getElementById('try-again');
+            const startOverBtn = document.getElementById('start-over');
+            
+            // Handle file selection via click
+            dropArea.addEventListener('click', () => {
+                fileUpload.click();
+            });
+            
+            // Handle file selection change
+            fileUpload.addEventListener('change', () => {
+                if (fileUpload.files.length > 0) {
+                    displayFileInfo(fileUpload.files[0]);
+                }
+            });
+            
+            // Prevent default drag behaviors
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            // Highlight drop area when dragging over it
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropArea.addEventListener(eventName, highlight, false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, unhighlight, false);
+            });
+            
+            function highlight() {
+                dropArea.classList.add('border-indigo-500');
+            }
+            
+            function unhighlight() {
+                dropArea.classList.remove('border-indigo-500');
+            }
+            
+            // Handle dropped files
+            dropArea.addEventListener('drop', handleDrop, false);
+            
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                
+                if (files.length > 0) {
+                    fileUpload.files = files;
+                    displayFileInfo(files[0]);
+                }
+            }
+            
+            // Display file info
+            function displayFileInfo(file) {
+                if (file.type !== 'application/pdf') {
+                    alert('Please upload a PDF file.');
+                    return;
+                }
+                
+                fileName.textContent = file.name;
+                fileInfo.classList.remove('hidden');
+            }
+            
+            // Handle form submission
+            uploadForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                if (!fileUpload.files.length) {
+                    alert('Please select a PDF file.');
+                    return;
+                }
+                
+                const file = fileUpload.files[0];
+                if (file.size > 16 * 1024 * 1024) { // 16MB
+                    alert('File is too large. Maximum size is 16MB.');
+                    return;
+                }
+                
+                // Show processing section
+                uploadSection.classList.add('hidden');
+                processingSection.classList.remove('hidden');
+                
+                // Create FormData
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                try {
+                    // Upload file
+                    const uploadResponse = await fetch('/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (!uploadResponse.ok) {
+                        const errorData = await uploadResponse.json();
+                        throw new Error(errorData.error || 'Failed to upload file');
+                    }
+                    
+                    const data = await uploadResponse.json();
+                    const jobId = data.job_id;
+                    
+                    // Start checking status
+                    checkStatus(jobId);
+                } catch (error) {
+                    showError(error.message);
+                }
+            });
+            
+            // Check job status
+            async function checkStatus(jobId) {
+                try {
+                    let progress = 10;
+                    progressBar.style.width = `${progress}%`;
+                    
+                    const statusInterval = setInterval(async () => {
+                        const response = await fetch(`/status/${jobId}`);
+                        
+                        if (!response.ok) {
+                            clearInterval(statusInterval);
+                            throw new Error('Failed to get job status');
+                        }
+                        
+                        const data = await response.json();
+                        
+                        // Update progress animation (simulated)
+                        if (progress < 90) {
+                            progress += 5;
+                            progressBar.style.width = `${progress}%`;
+                        }
+                        
+                        // Update status message
+                        switch (data.status) {
+                            case 'processing':
+                                statusMessage.textContent = 'Processing your PDF...';
+                                break;
+                            case 'completed':
+                                clearInterval(statusInterval);
+                                progressBar.style.width = '100%';
+                                showComplete(jobId, data.download_url);
+                                break;
+                            case 'failed':
+                                clearInterval(statusInterval);
+                                showError(data.error || 'Processing failed');
+                                break;
+                        }
+                    }, 3000);
+                } catch (error) {
+                    showError(error.message);
+                }
+            }
+            
+            // Show error message
+            function showError(message) {
+                processingSection.classList.add('hidden');
+                errorSection.classList.remove('hidden');
+                errorMessage.textContent = message;
+            }
+            
+            // Show completion
+            function showComplete(jobId, downloadUrl) {
+                processingSection.classList.add('hidden');
+                completeSection.classList.remove('hidden');
+                
+                // Set audio player source
+                audioPlayer.src = downloadUrl;
+                
+                // Set download link
+                downloadLink.href = downloadUrl;
+            }
+            
+            // Try again button
+            tryAgainBtn.addEventListener('click', () => {
+                errorSection.classList.add('hidden');
+                uploadSection.classList.remove('hidden');
+                fileInfo.classList.add('hidden');
+                fileUpload.value = '';
+            });
+            
+            // Start over button
+            startOverBtn.addEventListener('click', () => {
+                completeSection.classList.add('hidden');
+                uploadSection.classList.remove('hidden');
+                fileInfo.classList.add('hidden');
+                fileUpload.value = '';
+                audioPlayer.src = '';
+            });
+        });
+    </script>
+</body>
+</html>

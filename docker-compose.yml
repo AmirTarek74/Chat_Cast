@@ -1,0 +1,15 @@
+version: '3'
+
+services:
+  chatcast:
+    build: .
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    volumes:
+      - temp_data:/tmp
+    restart: unless-stopped
+
+volumes:
+  temp_data:
